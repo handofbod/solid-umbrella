@@ -71,8 +71,8 @@ function updateSidebar() {
   }
   [...roomPips.children].forEach((pip, index) => pip.classList.toggle("found", index < state.visited.length));
 
-  if (state.flags.power) objective.textContent = "Restore the lens and aim the beacon before the ship reaches Saltwick reef.";
-  if (state.flags.prismInstalled) objective.textContent = "Set the lens to the keeper's recorded bearing, then ignite the beacon.";
+  if (state.flags.power) objective.textContent = "For the first time tonight, the lighthouse has a pulse.";
+  if (state.flags.prismInstalled) objective.textContent = "Glass, brass and stormlight. The tower is waiting for one last decision.";
   if (state.won) objective.textContent = "The beacon burns. The ship has turned clear of the reef.";
 }
 

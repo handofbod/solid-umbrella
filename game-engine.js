@@ -47,7 +47,7 @@ const rooms = {
   },
   galley: {
     name: "Cold Galley",
-    description: "Tin cups swing from hooks above a cold stove. Cupboards line one wall and rain ticks steadily into a bucket beneath the window.",
+    description: "Tin cups swing from hooks above a cold stove. Rain ticks into a bucket beneath the window, almost keeping time with the clock that stopped at 9:12. Someone left a heel of bread on the table and never came back for it.",
     exits: { east: "hall", north: "bunkRoom" },
     details: {
       cupboards: "Most are bare. The last contains a sealed can of paraffin, marked ENGINE RESERVE.",
@@ -57,20 +57,20 @@ const rooms = {
   },
   bunkRoom: {
     name: "Keeper's Quarters",
-    description: "Two narrow bunks face a washstand. A third mattress has been dragged aside, exposing a floorboard scratched with fresh crescent marks.",
+    description: "Two narrow bunks face a washstand. One is made with military precision; the other is a nest of blankets and old newspapers. A third mattress has been dragged aside, exposing a floorboard scratched with fresh crescent marks.",
     exits: { south: "galley" },
     details: {
       floorboard: "The loose board lifts easily. Beneath it is a dry box containing a replacement fuse.",
-      bunks: "The blankets are neatly folded. Whoever left expected to return."
+      bunks: "Vale's bunk is neatly made. Beneath Rook's pillow is a photograph of three keepers squinting into summer sun. Someone has folded the corner over the youngest face."
     },
     items: ["ceramic fuse"]
   },
   chartRoom: {
     name: "Chart Room",
-    description: "Charts paper the curved walls. A storm log lies open on the desk beside a small cabinet whose swollen wooden door will not budge.",
+    description: "Charts paper the curved walls, their coastlines pricked with generations of pencil marks. A storm log lies open on the desk beside a small cabinet whose swollen wooden door will not budge.",
     exits: { west: "hall" },
     details: {
-      log: "The final entry reads: ‘Auxiliary bearing for the winter lens: 317°. Prism cleaned and stored in the desk cabinet. Generator fuse unreliable.’",
+      log: "The last page is in Vale's cramped hand: ‘14 October. Rook took the launch for the doctor before the glass worsened. Winter crystal cleaned and put away from the damp. Old Saltwick line still holds at three-one-seven. Crossley failed twice after dusk; Elias swears the spare is safe beneath his berth. Fog coming.’ There are no later entries.",
       charts: "Every safe course around Saltwick reef is marked in red. The approaching ship is not on one of them.",
       cabinet: "The damp wood has swollen tight around the frame. A tool could pry it open without shattering the contents."
     },
@@ -78,12 +78,13 @@ const rooms = {
   },
   engineRoom: {
     name: "Engine House",
-    description: "A brass-and-iron generator fills the cramped room. Its fuel gauge reads empty; a fuse socket gapes in the control board. A screwdriver rests on the workbench.",
+    description: "A brass-and-iron generator fills the cramped room, surrounded by pipes that vanish into the tower wall. A crowded workbench sits beneath a row of tools painted as silhouettes on the whitewashed brick.",
     exits: { west: "yard" },
     details: {
-      generator: "An old Crossley generator. It needs fuel and a fuse before the starting lever will do anything useful.",
+      generator: "An old Crossley generator, cold enough to bead with condensation. A fuel gauge and a small porcelain socket interrupt the control board; below them, the starting lever is polished by years of use.",
       gauge: "Empty. The engine takes paraffin.",
-      socket: "The ceramic fuse is missing."
+      socket: "The contacts inside are clean, but whatever sat between them is gone.",
+      workbench: "Chisels, files and oily rags cover the bench. One broad flat-head screwdriver has been left apart from the rest, its blade recently scored."
     },
     items: ["screwdriver"]
   },
@@ -114,6 +115,13 @@ const itemData = {
   "ceramic fuse": { aliases: ["fuse", "ceramic fuse", "replacement fuse"], description: "An intact ceramic generator fuse." },
   screwdriver: { aliases: ["screwdriver", "tool"], description: "A broad, sturdy flat-head screwdriver." },
   prism: { aliases: ["prism", "glass", "crystal", "lens prism"], description: "A diamond of precision-cut glass, made for the lighthouse lens." }
+};
+
+const discoveries = {
+  beach: { boat: "boat hook" },
+  galley: { cupboards: "paraffin can" },
+  bunkRoom: { floorboard: "ceramic fuse" },
+  engineRoom: { workbench: "screwdriver" }
 };
 
 const directionAliases = {
@@ -149,6 +157,7 @@ export class Game {
     return {
       room: "beach", inventory: [], visited: ["beach"], turns: 0, won: false,
       roomItems: Object.fromEntries(Object.entries(rooms).map(([id, room]) => [id, [...room.items]])),
+      revealedItems: [],
       flags: { keyRetrieved: false, engineUnlocked: false, cabinetOpen: false, generatorFuelled: false, fuseInstalled: false, power: false, prismInstalled: false },
       bearing: 0
     };
@@ -161,6 +170,7 @@ export class Game {
       ...fresh, ...state,
       inventory: Array.isArray(state.inventory) ? state.inventory.filter((x) => itemData[x]) : [],
       visited: Array.isArray(state.visited) ? state.visited.filter((x) => rooms[x]) : [state.room],
+      revealedItems: Array.isArray(state.revealedItems) ? state.revealedItems.filter((x) => itemData[x]) : [],
       roomItems: Object.fromEntries(Object.keys(rooms).map((id) => [
         id,
         Array.isArray(state.roomItems?.[id]) ? state.roomItems[id].filter((x) => itemData[x]) : fresh.roomItems[id]
@@ -173,14 +183,28 @@ export class Game {
   itemsHere() { return this.state.roomItems[this.state.room]; }
 
   roomDescription() {
-    return this.room().description
+    let description = this.room().description;
+    const { flags } = this.state;
+    if (this.state.room === "grotto" && flags.keyRetrieved) {
+      description = "The sea has bitten a shallow chamber into the cliff. Each wave fills the dark tide pool and withdraws with a throat-deep sigh.";
+    }
+    if (this.state.room === "hall" && flags.power) {
+      description = "Oilskins hang like drowned men in the round stone hall. The galley lies west and the chart room east. Wire-caged bulbs now pick out the spiral stair climbing through the tower.";
+    }
+    if (this.state.room === "chartRoom" && flags.cabinetOpen) {
+      description = description.replace("whose swollen wooden door will not budge", "whose splintered door now hangs open");
+    }
+    if (this.state.room === "engineRoom" && flags.power) {
+      description = description.replace("fills the cramped room", "fills the cramped room with a steady iron heartbeat");
+    }
+    return description
       .replace("{bearing}", this.state.bearing)
       .replace("{mountState}", this.state.flags.prismInstalled ? "fitted with its glass prism" : "empty");
   }
 
   describeRoom() {
     const room = this.room();
-    const visible = this.itemsHere();
+    const visible = this.itemsHere().filter((item) => this.state.revealedItems.includes(item));
     const itemLine = visible.length ? ` You can see ${this.list(visible.map((item) => this.withIndefiniteArticle(item)))} here.` : "";
     return { type: "location", title: room.name, text: this.roomDescription() + itemLine, exits: Object.keys(room.exits) };
   }
@@ -218,7 +242,7 @@ export class Game {
   execute(verb, target, input) {
     if (verb === "look") return [this.describeRoom()];
     if (verb === "inventory") return [{ type: "response", text: this.state.inventory.length ? `You are carrying ${this.list(this.state.inventory)}.` : "You are carrying nothing." }];
-    if (verb === "help") return [{ type: "system", text: "Try commands such as GO NORTH, LOOK, EXAMINE BOAT, TAKE HOOK, USE HOOK ON POOL, INVENTORY, READ LOG, or HINT. Short forms like N, S, E, W, U, D, X, and I work too." }];
+    if (verb === "help") return [{ type: "system", text: "Use ordinary commands: LOOK, EXAMINE something, TAKE something, USE one thing ON another, READ, OPEN, or GO NORTH. Short forms like N, S, E, W, U, D, X, and I work too. Type HINT only when you want a direct nudge." }];
     if (verb === "hint") return [{ type: "system", text: this.hint() }];
     if (verb === "restart") return [{ type: "restart", text: "Restart requested." }];
     if (verb === "go") return this.move(directionAliases[target] || target);
@@ -252,13 +276,28 @@ export class Game {
 
   examine(target) {
     if (!target || ["room", "around", "here"].includes(target)) return [this.describeRoom()];
-    const item = this.resolveItem(target, [...this.state.inventory, ...this.itemsHere()]);
-    if (item && (this.state.inventory.includes(item) || this.itemsHere().includes(item))) return [{ type: "response", text: itemData[item].description }];
+    const visibleItems = this.itemsHere().filter((candidate) => this.state.revealedItems.includes(candidate));
+    const item = this.resolveItem(target, [...this.state.inventory, ...visibleItems]);
+    if (item) return [{ type: "response", text: itemData[item].description }];
     const detailKey = Object.keys(this.room().details || {}).find((key) => target.includes(key) || key.includes(target));
     if (detailKey) {
       let text = this.room().details[detailKey].replace("{bearing}", this.state.bearing);
+      const discovery = discoveries[this.state.room]?.[detailKey];
+      if (discovery && this.itemsHere().includes(discovery) && !this.state.revealedItems.includes(discovery)) {
+        this.state.revealedItems.push(discovery);
+      }
       if (this.state.room === "grotto" && this.state.flags.keyRetrieved) text = "Only black water churns in the pool now.";
-      if (this.state.room === "chartRoom" && detailKey === "cabinet" && this.state.flags.cabinetOpen) text = "The cabinet hangs open. Its padded compartment is empty.";
+      if (this.state.room === "beach" && detailKey === "boat" && !this.itemsHere().includes("boat hook")) text = "The boat has been split from bow to stern. Empty clips beneath one thwart once held a long tool.";
+      if (this.state.room === "chartRoom" && detailKey === "cabinet" && this.state.flags.cabinetOpen) {
+        text = this.itemsHere().includes("prism") ? "The cabinet hangs open. A diamond of glass rests in its padded compartment." : "The cabinet hangs open. Its padded compartment is empty.";
+      }
+      if (this.state.room === "galley" && detailKey === "cupboards" && !this.itemsHere().includes("paraffin can")) text = "The cupboards hold chipped crockery, mouse droppings and an empty space where the engine reserve stood.";
+      if (this.state.room === "bunkRoom" && detailKey === "floorboard" && !this.itemsHere().includes("ceramic fuse")) text = "The loose board lifts easily. The dry box beneath it is empty.";
+      if (this.state.room === "engineRoom" && detailKey === "generator" && this.state.flags.power) text = "The old Crossley rocks gently on its mounts, driving current into the tower with a patient iron rhythm.";
+      if (this.state.room === "engineRoom" && detailKey === "gauge" && this.state.flags.generatorFuelled) text = "The needle trembles just below FULL.";
+      if (this.state.room === "engineRoom" && detailKey === "socket" && this.state.flags.fuseInstalled) text = "A fresh ceramic fuse bridges the polished contacts.";
+      if (this.state.room === "engineRoom" && detailKey === "workbench" && !this.itemsHere().includes("screwdriver")) text = "Chisels, files and oily rags cover the bench. A screwdriver-shaped gap interrupts the painted silhouettes on the wall.";
+      if (this.state.room === "lanternRoom" && detailKey === "lens" && this.state.flags.prismInstalled) text = "The mounted prism sits at the heart of the Fresnel lens, waiting to gather the arc into a single beam.";
       return [{ type: "response", text }];
     }
     if (target.includes("door") && this.state.room === "yard") return [{ type: "response", text: this.room().details.door }];
@@ -266,7 +305,8 @@ export class Game {
   }
 
   take(target) {
-    const item = this.resolveItem(target, this.itemsHere());
+    const visibleItems = this.itemsHere().filter((candidate) => this.state.revealedItems.includes(candidate));
+    const item = this.resolveItem(target, visibleItems);
     if (!item) {
       if (this.resolveItem(target, this.state.inventory)) return [{ type: "response", text: "You already have it." }];
       if (target.includes("key") && this.state.room === "grotto" && !this.state.flags.keyRetrieved) return [{ type: "error", text: "The key is too deep to reach by hand." }];
@@ -283,6 +323,7 @@ export class Game {
     if (!item) return [{ type: "error", text: "You are not carrying that." }];
     this.state.inventory = this.state.inventory.filter((x) => x !== item);
     this.itemsHere().push(item);
+    if (!this.state.revealedItems.includes(item)) this.state.revealedItems.push(item);
     return [{ type: "response", text: `You set down the ${item}.` }];
   }
 
@@ -306,6 +347,7 @@ export class Game {
       if (!has("screwdriver")) return [{ type: "error", text: "The cabinet needs a strong, narrow tool to pry it open." }];
       this.state.flags.cabinetOpen = true;
       this.itemsHere().push("prism");
+      if (!this.state.revealedItems.includes("prism")) this.state.revealedItems.push("prism");
       return [{ type: "response", text: "You work the screwdriver into the swollen frame. With a crack, the cabinet opens, revealing a flawless glass prism." }];
     }
     if (this.state.room === "engineRoom" && (target.includes("paraffin") || target.includes("fuel"))) return this.fuel(target);
@@ -345,10 +387,9 @@ export class Game {
   start(target) {
     if (this.state.room !== "engineRoom" || (!target.includes("generator") && target !== "engine" && target !== "")) return [{ type: "error", text: "There is nothing here to start." }];
     if (this.state.flags.power) return [{ type: "response", text: "The generator is already chugging steadily." }];
-    const missing = [];
-    if (!this.state.flags.generatorFuelled) missing.push("fuel");
-    if (!this.state.flags.fuseInstalled) missing.push("a fuse");
-    if (missing.length) return [{ type: "error", text: `The generator will not start. It still needs ${this.list(missing)}.` }];
+    if (!this.state.flags.generatorFuelled && !this.state.flags.fuseInstalled) return [{ type: "error", text: "The lever moves without resistance. The fuel needle lies dead against its stop, and no current reaches the starting coil." }];
+    if (!this.state.flags.generatorFuelled) return [{ type: "error", text: "The starter catches for half a turn, then the engine gives a dry metallic cough. The fuel needle has not moved." }];
+    if (!this.state.flags.fuseInstalled) return [{ type: "error", text: "The engine turns, but the control board remains dark. A faint spark jumps between the empty porcelain contacts." }];
     this.state.flags.power = true;
     return [{ type: "system", text: "You heave the starting lever. The generator coughs, catches, and settles into a deep mechanical rhythm. Beyond the door, lights bloom through the tower." }];
   }
@@ -365,11 +406,9 @@ export class Game {
 
   ignite() {
     if (this.state.room !== "lanternRoom") return [{ type: "error", text: "There is nothing here to ignite." }];
-    const missing = [];
-    if (!this.state.flags.power) missing.push("power");
-    if (!this.state.flags.prismInstalled) missing.push("the prism");
-    if (this.state.bearing !== 317) missing.push("the correct bearing");
-    if (missing.length) return [{ type: "error", text: `The beacon cannot focus yet. It still needs ${this.list(missing)}.` }];
+    if (!this.state.flags.power) return [{ type: "error", text: "The lever falls with a dead brass clack. No current reaches the lamp." }];
+    if (!this.state.flags.prismInstalled) return [{ type: "error", text: "The arc crackles into life, but without anything in the central mount its light breaks uselessly across the glass." }];
+    if (this.state.bearing !== 317) return [{ type: "error", text: "A pale beam sweeps into the rain, illuminating only empty water and cliff. The approaching ship gives no answer." }];
     this.state.won = true;
     return [{ type: "ending", text: "You pull the ignition lever. White fire leaps into the prism, and the great lens turns night into a blade of light." }];
   }

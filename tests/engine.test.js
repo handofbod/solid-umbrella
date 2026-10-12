@@ -8,6 +8,8 @@ function run(game, commands) {
 
 test("direction abbreviations and common synonyms work", () => {
   const game = new Game();
+  assert.doesNotMatch(game.describeRoom().text, /boat hook/);
+  game.command("examine boat");
   assert.match(game.describeRoom().text, /a boat hook/);
   game.command("n");
   assert.equal(game.state.room, "cliffPath");
@@ -19,8 +21,11 @@ test("direction abbreviations and common synonyms work", () => {
 test("room descriptions use natural articles and live puzzle state", () => {
   const game = new Game();
   game.state.room = "engineRoom";
+  assert.doesNotMatch(game.describeRoom().text, /screwdriver/);
+  game.command("examine workbench");
   assert.match(game.describeRoom().text, /a screwdriver/);
   game.state.room = "bunkRoom";
+  game.command("examine floorboard");
   assert.match(game.describeRoom().text, /a ceramic fuse/);
   game.state.room = "lanternRoom";
   game.command("set lens to 317");
@@ -30,7 +35,7 @@ test("room descriptions use natural articles and live puzzle state", () => {
 
 test("boat hook retrieves the inaccessible key", () => {
   const game = new Game();
-  run(game, ["take hook", "north", "west", "use boat hook on the pool"]);
+  run(game, ["examine boat", "take hook", "north", "west", "use boat hook on the pool"]);
   assert.ok(game.state.inventory.includes("brass key"));
   assert.equal(game.state.flags.keyRetrieved, true);
 });
@@ -38,8 +43,8 @@ test("boat hook retrieves the inaccessible key", () => {
 test("complete adventure can be solved with natural commands", () => {
   const game = new Game();
   const results = run(game, [
-    "grab the hook", "n", "w", "use hook on key", "e", "n", "unlock door with key", "e",
-    "take screwdriver", "w", "n", "w", "take fuel can", "n", "take fuse", "s", "e", "s", "e",
+    "examine boat", "grab the hook", "n", "w", "use hook on key", "e", "n", "unlock door with key", "e",
+    "examine workbench", "take screwdriver", "w", "n", "w", "examine cupboards", "take fuel can", "n", "examine floorboard", "take fuse", "s", "e", "s", "e",
     "fuel generator", "install fuse", "start generator", "w", "n", "e", "pry cabinet with screwdriver",
     "take prism", "read log", "w", "up", "up", "put prism in lens", "align lens to 317", "pull lever"
   ]);
@@ -52,8 +57,7 @@ test("beacon cannot ignite before every requirement is met", () => {
   const game = new Game();
   game.state.room = "lanternRoom";
   const result = game.command("light beacon")[0];
-  assert.match(result.text, /power/);
-  assert.match(result.text, /prism/);
+  assert.match(result.text, /No current/i);
   assert.equal(game.state.won, false);
 });
 
