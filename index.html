@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="The Last Signal — a compact, atmospheric text adventure in your browser."
+    />
+    <meta name="theme-color" content="#071315" />
+    <title>The Last Signal</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="weather" aria-hidden="true">
+      <span></span><span></span><span></span>
+    </div>
+
+    <main class="game-shell">
+      <header class="masthead">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">✦</span>
+          <div>
+            <p class="eyebrow">A tale of Saltwick Head</p>
+            <h1>The Last Signal</h1>
+          </div>
+        </div>
+        <div class="storm-status" aria-label="Weather: severe storm">
+          <span class="pulse"></span>
+          Gale warning
+        </div>
+      </header>
+
+      <section class="story-panel" aria-label="Game transcript">
+        <div class="panel-rule">
+          <span id="location-label">Shingle Beach</span>
+          <span id="turn-label">Turn 0</span>
+        </div>
+
+        <div id="transcript" class="transcript" role="log" aria-live="polite" aria-relevant="additions"></div>
+
+        <form id="command-form" class="command-form" autocomplete="off">
+          <label for="command-input" class="prompt-mark" aria-label="Enter command">›</label>
+          <input
+            id="command-input"
+            name="command"
+            type="text"
+            spellcheck="false"
+            autocomplete="off"
+            autocapitalize="sentences"
+            placeholder="What will you do?"
+            aria-describedby="command-hint"
+          />
+          <button type="submit">Enter</button>
+        </form>
+
+        <div class="quick-commands" aria-label="Suggested commands">
+          <button type="button" data-command="look">Look around</button>
+          <button type="button" data-command="inventory">Inventory</button>
+          <button type="button" data-command="help">Help</button>
+        </div>
+        <p id="command-hint" class="sr-only">Type a command such as look, go north, examine boat, or take hook.</p>
+      </section>
+
+      <aside class="field-notes" aria-label="Explorer's field notes">
+        <section>
+          <h2>Field notes</h2>
+          <p id="objective">Reach the lighthouse before the approaching ship reaches the reef.</p>
+        </section>
+
+        <section>
+          <div class="aside-heading">
+            <h2>Carrying</h2>
+            <span id="inventory-count">0 / 6</span>
+          </div>
+          <ul id="inventory-list" class="inventory-list">
+            <li class="empty">Nothing but cold seawater.</li>
+          </ul>
+        </section>
+
+        <section>
+          <div class="aside-heading">
+            <h2>Places found</h2>
+            <span id="room-count">1 / 11</span>
+          </div>
+          <div id="room-pips" class="room-pips" aria-label="One of eleven locations discovered"></div>
+        </section>
+
+        <section class="tip">
+          <p class="eyebrow">Old adventurer's advice</p>
+          <p>Use everyday language. Try examining anything that seems important.</p>
+        </section>
+
+        <button id="restart-button" class="restart" type="button">Begin again</button>
+      </aside>
+    </main>
+
+    <footer>
+      <span>Saltwick Head, 1897</span>
+      <span>Your progress is kept in this browser.</span>
+    </footer>
+
+    <dialog id="ending-dialog">
+      <div class="ending-icon" aria-hidden="true">✦</div>
+      <p class="eyebrow">The light returns</p>
+      <h2>Signal answered</h2>
+      <p>
+        The great lens gathers the flame and throws it across the black water. Far below, the ship changes
+        course. One answering horn rolls through the storm.
+      </p>
+      <p class="ending-score" id="ending-score"></p>
+      <button id="ending-close" type="button">Stay awhile</button>
+      <button id="ending-restart" class="secondary" type="button">Play again</button>
+    </dialog>
+
+    <script type="module" src="app.js"></script>
+  </body>
+</html>
