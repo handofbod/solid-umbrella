@@ -51,7 +51,8 @@ const rooms = {
     exits: { east: "hall", north: "bunkRoom" },
     details: {
       cupboards: "Most are bare. The last contains a sealed can of paraffin, marked ENGINE RESERVE.",
-      stove: "Cold ashes and the skeleton of somebody's last breakfast."
+      stove: "Cold ashes and the skeleton of somebody's last breakfast.",
+      cups: "Three tin cups hang above the stove, each stamped with a keeper's initials: M.V., E.R. and T.R."
     },
     items: ["paraffin can"]
   },
@@ -102,7 +103,8 @@ const rooms = {
     details: {
       lens: "The lens can be aligned by setting its bearing wheel. A diamond-shaped mount at its heart is missing a prism.",
       wheel: "Numbers circle the wheel from 0 to 359. The pointer currently shows {bearing}°.",
-      lever: "The IGNITION lever is connected to the powered arc lamp."
+      lever: "The IGNITION lever is connected to the powered arc lamp.",
+      glass: "Rain crawls down the outside of the lantern glass in silver threads."
     },
     items: []
   }
@@ -122,6 +124,15 @@ const discoveries = {
   galley: { cupboards: "paraffin can" },
   bunkRoom: { floorboard: "ceramic fuse" },
   engineRoom: { workbench: "screwdriver" }
+};
+
+const revisitDescriptions = {
+  beach: "The tide is retreating, yet the wrecked boat sits several feet higher on the shingle than before. A dark groove trails from its keel toward the cliff path.",
+  grotto: "Fresh parallel scratches score the weed at the pool's edge. They continue for a few feet across the stone, then simply stop.",
+  hall: "One of the oilskins has turned on its hook. Its empty sleeves now face the stair, although the air in the hall is perfectly still.",
+  galley: "The cups that hung above the stove now lie scattered across the floor. One has rolled beneath the table; another bears a thin, dark smear across its handle that the dripping rain has not washed away.",
+  chartRoom: "The storm log is no longer open to Vale's final entry. Several damp pages have been turned toward the middle, leaving a thumb-shaped mark in the margin.",
+  lanternRoom: "Condensation clouds the lantern glass. Against the outer pane, far above any reachable ledge, five clear streaks slowly lengthen through the mist."
 };
 
 const directionAliases = {
@@ -156,6 +167,7 @@ export class Game {
   initialState() {
     return {
       room: "beach", inventory: [], visited: ["beach"], turns: 0, won: false,
+      visitCounts: { beach: 1 },
       roomItems: Object.fromEntries(Object.entries(rooms).map(([id, room]) => [id, [...room.items]])),
       revealedItems: [],
       flags: { keyRetrieved: false, engineUnlocked: false, cabinetOpen: false, generatorFuelled: false, fuseInstalled: false, power: false, prismInstalled: false },
@@ -166,10 +178,14 @@ export class Game {
   sanitiseState(state) {
     const fresh = this.initialState();
     if (!state || !rooms[state.room]) return fresh;
+    const validVisits = state.visitCounts && typeof state.visitCounts === "object"
+      ? Object.fromEntries(Object.entries(state.visitCounts).filter(([id, count]) => rooms[id] && Number.isInteger(count) && count > 0))
+      : Object.fromEntries((Array.isArray(state.visited) ? state.visited : [state.room]).filter((id) => rooms[id]).map((id) => [id, 1]));
     return {
       ...fresh, ...state,
       inventory: Array.isArray(state.inventory) ? state.inventory.filter((x) => itemData[x]) : [],
       visited: Array.isArray(state.visited) ? state.visited.filter((x) => rooms[x]) : [state.room],
+      visitCounts: { ...validVisits, [state.room]: validVisits[state.room] || 1 },
       revealedItems: Array.isArray(state.revealedItems) ? state.revealedItems.filter((x) => itemData[x]) : [],
       roomItems: Object.fromEntries(Object.keys(rooms).map((id) => [
         id,
@@ -196,6 +212,13 @@ export class Game {
     }
     if (this.state.room === "engineRoom" && flags.power) {
       description = description.replace("fills the cramped room", "fills the cramped room with a steady iron heartbeat");
+    }
+    if ((this.state.visitCounts[this.state.room] || 0) > 1) {
+      if (this.state.room === "galley") {
+        description = "Rain still ticks into the bucket beneath the window, but the room is no longer as you left it. Someone—or something—has disturbed the cold galley.";
+      }
+      const changedDetails = revisitDescriptions[this.state.room];
+      if (changedDetails) description += ` ${changedDetails}`;
     }
     return description
       .replace("{bearing}", this.state.bearing)
@@ -271,6 +294,7 @@ export class Game {
     if (!destination) return [{ type: "error", text: `You cannot go ${direction} from here.` }];
     this.state.room = destination;
     if (!this.state.visited.includes(destination)) this.state.visited.push(destination);
+    this.state.visitCounts[destination] = (this.state.visitCounts[destination] || 0) + 1;
     return [this.describeRoom()];
   }
 
@@ -298,6 +322,10 @@ export class Game {
       if (this.state.room === "engineRoom" && detailKey === "socket" && this.state.flags.fuseInstalled) text = "A fresh ceramic fuse bridges the polished contacts.";
       if (this.state.room === "engineRoom" && detailKey === "workbench" && !this.itemsHere().includes("screwdriver")) text = "Chisels, files and oily rags cover the bench. A screwdriver-shaped gap interrupts the painted silhouettes on the wall.";
       if (this.state.room === "lanternRoom" && detailKey === "lens" && this.state.flags.prismInstalled) text = "The mounted prism sits at the heart of the Fresnel lens, waiting to gather the arc into a single beam.";
+      if (this.state.room === "hall" && detailKey === "oilskins" && (this.state.visitCounts.hall || 0) > 1) text += " The coat marked E.R. has turned to face the stairs. Its hook gives a small, regular creak.";
+      if (this.state.room === "galley" && detailKey === "cups" && (this.state.visitCounts.galley || 0) > 1) text = "M.V. is dented against the wall. E.R. lies beneath the table. The cup marked T.R. carries a tacky brown-red smear on its handle.";
+      if (this.state.room === "chartRoom" && detailKey === "log" && (this.state.visitCounts.chartRoom || 0) > 1) text += " The wet thumbprint across the earlier pages is too broad to be yours.";
+      if (this.state.room === "lanternRoom" && detailKey === "glass" && (this.state.visitCounts.lanternRoom || 0) > 1) text = "Five trails have been drawn downward through condensation on the outside of the glass. There is no balcony beneath them and nowhere for a person to stand.";
       return [{ type: "response", text }];
     }
     if (target.includes("door") && this.state.room === "yard") return [{ type: "response", text: this.room().details.door }];

@@ -33,6 +33,19 @@ test("room descriptions use natural articles and live puzzle state", () => {
   assert.doesNotMatch(game.describeRoom().text, /set to zero/);
 });
 
+test("returning to a room changes its atmosphere without changing puzzle state", () => {
+  const game = new Game();
+  run(game, ["north", "north", "north", "west"]);
+  assert.doesNotMatch(game.describeRoom().text, /dark smear/);
+  game.command("east");
+  game.command("west");
+  assert.match(game.describeRoom().text, /dark smear/);
+  assert.equal(game.state.visitCounts.galley, 2);
+  assert.equal(game.state.flags.power, false);
+  game.command("look");
+  assert.equal(game.state.visitCounts.galley, 2);
+});
+
 test("boat hook retrieves the inaccessible key", () => {
   const game = new Game();
   run(game, ["examine boat", "take hook", "north", "west", "use boat hook on the pool"]);
