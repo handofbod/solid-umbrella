@@ -24,8 +24,8 @@ test("room descriptions use natural articles and live puzzle state", () => {
   assert.doesNotMatch(game.describeRoom().text, /screwdriver/);
   game.command("examine workbench");
   assert.match(game.describeRoom().text, /a screwdriver/);
-  game.state.room = "bunkRoom";
-  game.command("examine floorboard");
+  game.state.room = "storageShed";
+  game.command("examine shelves");
   assert.match(game.describeRoom().text, /a ceramic fuse/);
   game.state.room = "lanternRoom";
   game.command("set lens to 317");
@@ -53,17 +53,42 @@ test("boat hook retrieves the inaccessible key", () => {
   assert.equal(game.state.flags.keyRetrieved, true);
 });
 
+test("boat hook lowers the shed ladder before the fuse can be taken", () => {
+  const game = new Game();
+  game.state.room = "storageShed";
+  game.state.inventory.push("boat hook");
+  game.command("examine shelves");
+  assert.match(game.command("take fuse")[0].text, /two feet above/);
+  assert.equal(game.state.inventory.includes("ceramic fuse"), false);
+  assert.match(game.command("pull ladder with hook")[0].text, /ladder unfolds/);
+  assert.equal(game.state.flags.ladderLowered, true);
+  game.command("take fuse");
+  assert.equal(game.state.inventory.includes("ceramic fuse"), true);
+});
+
+test("older saves relocate the untaken fuse without duplicating it", () => {
+  const game = new Game({
+    room: "bunkRoom",
+    visited: ["beach", "bunkRoom"],
+    inventory: [],
+    roomItems: { bunkRoom: ["ceramic fuse"] },
+    flags: {}
+  });
+  assert.equal(game.state.roomItems.bunkRoom.includes("ceramic fuse"), false);
+  assert.equal(game.state.roomItems.storageShed.filter((item) => item === "ceramic fuse").length, 1);
+});
+
 test("complete adventure can be solved with natural commands", () => {
   const game = new Game();
   const results = run(game, [
     "examine boat", "grab the hook", "n", "w", "use hook on key", "e", "n", "unlock door with key", "e",
-    "examine workbench", "take screwdriver", "w", "n", "w", "examine cupboards", "take fuel can", "n", "examine floorboard", "take fuse", "s", "e", "s", "e",
+    "examine workbench", "take screwdriver", "w", "w", "n", "examine shelves", "use hook on ladder", "take fuse", "s", "e", "n", "w", "examine cupboards", "take fuel can", "n", "examine floorboard", "s", "e", "s", "e",
     "fuel generator", "install fuse", "start generator", "w", "n", "e", "pry cabinet with screwdriver",
     "take prism", "read log", "w", "up", "up", "put prism in lens", "align lens to 317", "pull lever"
   ]);
   assert.equal(game.state.won, true);
   assert.ok(results.some((result) => result.type === "ending"));
-  assert.equal(game.state.visited.length, 11);
+  assert.equal(game.state.visited.length, 13);
 });
 
 test("beacon cannot ignite before every requirement is met", () => {

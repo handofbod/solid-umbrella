@@ -1,4 +1,4 @@
-const ROOM_COUNT = 11;
+const ROOM_COUNT = 13;
 
 const rooms = {
   beach: {
@@ -31,8 +31,8 @@ const rooms = {
   },
   yard: {
     name: "Lighthouse Yard",
-    description: "A stone wall shelters the lighthouse yard. The tower door stands open to the north. An iron engine-house door is set into the eastern wall, its lock green with age.",
-    exits: { south: "cliffPath", north: "hall", east: "engineRoom" },
+    description: "A stone wall shelters the lighthouse yard. The tower door stands open to the north. An iron engine-house door is set into the eastern wall, its lock green with age. A narrow service path slips west around the tower's blind side.",
+    exits: { south: "cliffPath", north: "hall", east: "engineRoom", west: "rearPath" },
     lockedExits: { east: "The engine-house door is locked." },
     details: { door: "The eastern door bears a large brass lock. It looks older than the rust surrounding it.", tower: "The lighthouse is built from pale granite, streaked black by a century of storms." },
     items: []
@@ -61,17 +61,17 @@ const rooms = {
     description: "Two narrow bunks face a washstand. One is made with military precision; the other is a nest of blankets and old newspapers. A third mattress has been dragged aside, exposing a floorboard scratched with fresh crescent marks.",
     exits: { south: "galley" },
     details: {
-      floorboard: "The loose board lifts easily. Beneath it is a dry box containing a replacement fuse.",
+      floorboard: "The loose board lifts easily. The dry box beneath it is empty except for a pencilled note: ‘Electrical spares shifted to rear store. Rats again. —Elias’",
       bunks: "Vale's bunk is neatly made. Beneath Rook's pillow is a photograph of three keepers squinting into summer sun. Someone has folded the corner over the youngest face."
     },
-    items: ["ceramic fuse"]
+    items: []
   },
   chartRoom: {
     name: "Chart Room",
     description: "Charts paper the curved walls, their coastlines pricked with generations of pencil marks. A storm log lies open on the desk beside a small cabinet whose swollen wooden door will not budge.",
     exits: { west: "hall" },
     details: {
-      log: "The last page is in Vale's cramped hand: ‘14 October. Rook took the launch for the doctor before the glass worsened. Winter crystal cleaned and put away from the damp. Old Saltwick line still holds at three-one-seven. Crossley failed twice after dusk; Elias swears the spare is safe beneath his berth. Fog coming.’ There are no later entries.",
+      log: "The last page is in Vale's cramped hand: ‘14 October. Rook took the launch for the doctor before the glass worsened. Winter crystal cleaned and put away from the damp. Old Saltwick line still holds at three-one-seven. Crossley failed twice after dusk; Elias moved the electrical spares to the rear store after finding rats beneath his berth. Fog coming.’ There are no later entries.",
       charts: "Every safe course around Saltwick reef is marked in red. The approaching ship is not on one of them.",
       cabinet: "The damp wood has swollen tight around the frame. A tool could pry it open without shattering the contents."
     },
@@ -88,6 +88,30 @@ const rooms = {
       workbench: "Chisels, files and oily rags cover the bench. One broad flat-head screwdriver has been left apart from the rest, its blade recently scored."
     },
     items: ["screwdriver"]
+  },
+  rearPath: {
+    name: "Rear Service Path",
+    description: "The path narrows behind the lighthouse, pressed between the curved tower wall and a thicket of salt-burned thorn. No window overlooks this side. To the north, a low storage shed crouches beneath a roof of tarred slate.",
+    exits: { east: "yard", north: "storageShed" },
+    details: {
+      wall: "Pale stone rises without a window or handhold. Near the ground, something has rubbed a dark crescent through the lichen.",
+      thorn: "The branches are webbed with wool fibres and one short strand of coarse black hair.",
+      shed: "The shed door hangs slightly open. Its hasp is intact, but the wood around it is scored with narrow vertical marks."
+    },
+    items: []
+  },
+  storageShed: {
+    name: "Storage Shed",
+    description: "The shed smells of tar, wet rope and old iron. Shelves crowd three walls beneath a confusion of labelled tins, lamp parts and bundled netting. A folding ladder is lashed flat beneath the rafters, its release loop well beyond your reach.",
+    exits: { south: "rearPath" },
+    details: {
+      shelves: "The lower shelves hold cork floats, paint skins and boxes softened by damp. On the top shelf, almost lost in shadow, a small ceramic fuse sits inside an open tobacco tin.",
+      shelf: "The lower shelves hold cork floats, paint skins and boxes softened by damp. On the top shelf, almost lost in shadow, a small ceramic fuse sits inside an open tobacco tin.",
+      ladder: "A narrow folding ladder is secured overhead by a simple rope loop. The loop is too high to reach by hand, but it would not take much force to pull it free.",
+      rafters: "The ladder is strapped beneath them. Beyond it, old cobwebs have been swept aside in a broad, body-shaped passage.",
+      tins: "Lamp wicks, screws, chalk, two dead beetles—and, high above, one open tobacco tin holding a ceramic fuse."
+    },
+    items: ["ceramic fuse"]
   },
   lowerStair: {
     name: "Spiral Stair",
@@ -122,8 +146,8 @@ const itemData = {
 const discoveries = {
   beach: { boat: "boat hook" },
   galley: { cupboards: "paraffin can" },
-  bunkRoom: { floorboard: "ceramic fuse" },
-  engineRoom: { workbench: "screwdriver" }
+  engineRoom: { workbench: "screwdriver" },
+  storageShed: { shelves: "ceramic fuse", shelf: "ceramic fuse", tins: "ceramic fuse" }
 };
 
 const revisitDescriptions = {
@@ -132,6 +156,8 @@ const revisitDescriptions = {
   hall: "One of the oilskins has turned on its hook. Its empty sleeves now face the stair, although the air in the hall is perfectly still.",
   galley: "The cups that hung above the stove now lie scattered across the floor. One has rolled beneath the table; another bears a thin, dark smear across its handle that the dripping rain has not washed away.",
   chartRoom: "The storm log is no longer open to Vale's final entry. Several damp pages have been turned toward the middle, leaving a thumb-shaped mark in the margin.",
+  rearPath: "In the mud beside the tower is a fresh heel print pointing toward the yard. There is no matching toe, nor any second print before or after it.",
+  storageShed: "The bundle of netting in the corner has slumped onto the floor. Beneath it, the dust is marked by a clean oval where something heavy had been resting.",
   lanternRoom: "Condensation clouds the lantern glass. Against the outer pane, far above any reachable ledge, five clear streaks slowly lengthen through the mist."
 };
 
@@ -170,7 +196,7 @@ export class Game {
       visitCounts: { beach: 1 },
       roomItems: Object.fromEntries(Object.entries(rooms).map(([id, room]) => [id, [...room.items]])),
       revealedItems: [],
-      flags: { keyRetrieved: false, engineUnlocked: false, cabinetOpen: false, generatorFuelled: false, fuseInstalled: false, power: false, prismInstalled: false },
+      flags: { keyRetrieved: false, engineUnlocked: false, cabinetOpen: false, generatorFuelled: false, fuseInstalled: false, power: false, prismInstalled: false, ladderLowered: false },
       bearing: 0
     };
   }
@@ -181,17 +207,26 @@ export class Game {
     const validVisits = state.visitCounts && typeof state.visitCounts === "object"
       ? Object.fromEntries(Object.entries(state.visitCounts).filter(([id, count]) => rooms[id] && Number.isInteger(count) && count > 0))
       : Object.fromEntries((Array.isArray(state.visited) ? state.visited : [state.room]).filter((id) => rooms[id]).map((id) => [id, 1]));
+    const inventory = Array.isArray(state.inventory) ? state.inventory.filter((x) => itemData[x]) : [];
+    const flags = { ...fresh.flags, ...(state.flags || {}) };
+    const roomItems = Object.fromEntries(Object.keys(rooms).map((id) => [
+      id,
+      Array.isArray(state.roomItems?.[id]) ? state.roomItems[id].filter((x) => itemData[x]) : fresh.roomItems[id]
+    ]));
+
+    // Older saves stored the spare fuse beneath the keeper's bunk. Relocate it
+    // without duplicating one that has already been taken or installed.
+    Object.keys(roomItems).forEach((id) => { roomItems[id] = roomItems[id].filter((item) => item !== "ceramic fuse"); });
+    if (!flags.fuseInstalled && !inventory.includes("ceramic fuse")) roomItems.storageShed.push("ceramic fuse");
+
     return {
       ...fresh, ...state,
-      inventory: Array.isArray(state.inventory) ? state.inventory.filter((x) => itemData[x]) : [],
+      inventory,
       visited: Array.isArray(state.visited) ? state.visited.filter((x) => rooms[x]) : [state.room],
       visitCounts: { ...validVisits, [state.room]: validVisits[state.room] || 1 },
       revealedItems: Array.isArray(state.revealedItems) ? state.revealedItems.filter((x) => itemData[x]) : [],
-      roomItems: Object.fromEntries(Object.keys(rooms).map((id) => [
-        id,
-        Array.isArray(state.roomItems?.[id]) ? state.roomItems[id].filter((x) => itemData[x]) : fresh.roomItems[id]
-      ])),
-      flags: { ...fresh.flags, ...(state.flags || {}) }
+      roomItems,
+      flags
     };
   }
 
@@ -212,6 +247,9 @@ export class Game {
     }
     if (this.state.room === "engineRoom" && flags.power) {
       description = description.replace("fills the cramped room", "fills the cramped room with a steady iron heartbeat");
+    }
+    if (this.state.room === "storageShed" && flags.ladderLowered) {
+      description = "The shed smells of tar, wet rope and old iron. Shelves crowd three walls beneath a confusion of labelled tins, lamp parts and bundled netting. The freed ladder now leans against the highest shelves.";
     }
     if ((this.state.visitCounts[this.state.room] || 0) > 1) {
       if (this.state.room === "galley") {
@@ -268,6 +306,7 @@ export class Game {
     if (verb === "help") return [{ type: "system", text: "Use ordinary commands: LOOK, EXAMINE something, TAKE something, USE one thing ON another, READ, OPEN, or GO NORTH. Short forms like N, S, E, W, U, D, X, and I work too. Type HINT only when you want a direct nudge." }];
     if (verb === "hint") return [{ type: "system", text: this.hint() }];
     if (verb === "restart") return [{ type: "restart", text: "Restart requested." }];
+    if (verb === "go" && this.state.room === "storageShed" && target.includes("ladder")) return this.climbLadder();
     if (verb === "go") return this.move(directionAliases[target] || target);
     if (verb === "examine" || verb === "read") return this.examine(target || (verb === "read" ? "log" : "room"));
     if (verb === "take") return this.take(target);
@@ -277,6 +316,7 @@ export class Game {
     if (verb === "install") return this.install(target, input);
     if (verb === "start") return this.start(target);
     if (verb === "set") return this.setBearing(input);
+    if (verb === "pull" && this.state.room === "storageShed") return this.use(target, input);
     if (verb === "pull" || verb === "light") return this.ignite(target);
     if (verb === "wait") return [{ type: "response", text: "You listen. The ship's horn sounds again, nearer now. Waiting will not help it." }];
     return [{ type: "error", text: "That will not help here." }];
@@ -284,6 +324,8 @@ export class Game {
 
   move(direction) {
     const room = this.room();
+    if (this.state.room === "yard" && /rear|back|service|shed|store/.test(direction)) direction = "west";
+    if (this.state.room === "rearPath" && /shed|store|building|inside/.test(direction)) direction = "north";
     if (!directionAliases[direction] && !["north", "south", "east", "west", "up", "down"].includes(direction)) {
       return [{ type: "error", text: "Which direction? Try north, south, east, west, up, or down." }];
     }
@@ -296,6 +338,11 @@ export class Game {
     if (!this.state.visited.includes(destination)) this.state.visited.push(destination);
     this.state.visitCounts[destination] = (this.state.visitCounts[destination] || 0) + 1;
     return [this.describeRoom()];
+  }
+
+  climbLadder() {
+    if (!this.state.flags.ladderLowered) return [{ type: "error", text: "The ladder is still lashed beneath the rafters, far above your hands." }];
+    return [{ type: "response", text: "You climb until your shoulders are level with the top shelf. The ladder shifts once on the uneven boards, then holds." }];
   }
 
   examine(target) {
@@ -316,7 +363,6 @@ export class Game {
         text = this.itemsHere().includes("prism") ? "The cabinet hangs open. A diamond of glass rests in its padded compartment." : "The cabinet hangs open. Its padded compartment is empty.";
       }
       if (this.state.room === "galley" && detailKey === "cupboards" && !this.itemsHere().includes("paraffin can")) text = "The cupboards hold chipped crockery, mouse droppings and an empty space where the engine reserve stood.";
-      if (this.state.room === "bunkRoom" && detailKey === "floorboard" && !this.itemsHere().includes("ceramic fuse")) text = "The loose board lifts easily. The dry box beneath it is empty.";
       if (this.state.room === "engineRoom" && detailKey === "generator" && this.state.flags.power) text = "The old Crossley rocks gently on its mounts, driving current into the tower with a patient iron rhythm.";
       if (this.state.room === "engineRoom" && detailKey === "gauge" && this.state.flags.generatorFuelled) text = "The needle trembles just below FULL.";
       if (this.state.room === "engineRoom" && detailKey === "socket" && this.state.flags.fuseInstalled) text = "A fresh ceramic fuse bridges the polished contacts.";
@@ -326,6 +372,8 @@ export class Game {
       if (this.state.room === "galley" && detailKey === "cups" && (this.state.visitCounts.galley || 0) > 1) text = "M.V. is dented against the wall. E.R. lies beneath the table. The cup marked T.R. carries a tacky brown-red smear on its handle.";
       if (this.state.room === "chartRoom" && detailKey === "log" && (this.state.visitCounts.chartRoom || 0) > 1) text += " The wet thumbprint across the earlier pages is too broad to be yours.";
       if (this.state.room === "lanternRoom" && detailKey === "glass" && (this.state.visitCounts.lanternRoom || 0) > 1) text = "Five trails have been drawn downward through condensation on the outside of the glass. There is no balcony beneath them and nowhere for a person to stand.";
+      if (this.state.room === "storageShed" && detailKey === "ladder" && this.state.flags.ladderLowered) text = "The freed ladder leans against the shelves, its feet planted as firmly as the warped floor allows.";
+      if (this.state.room === "storageShed" && ["shelves", "shelf", "tins"].includes(detailKey) && !this.itemsHere().includes("ceramic fuse")) text = "Paint skins, lamp parts and softened boxes fill the shelves. The open tobacco tin on the top shelf is empty.";
       return [{ type: "response", text }];
     }
     if (target.includes("door") && this.state.room === "yard") return [{ type: "response", text: this.room().details.door }];
@@ -339,10 +387,15 @@ export class Game {
       if (this.resolveItem(target, this.state.inventory)) return [{ type: "response", text: "You already have it." }];
       if (target.includes("key") && this.state.room === "grotto" && !this.state.flags.keyRetrieved) return [{ type: "error", text: "The key is too deep to reach by hand." }];
       if (target.includes("prism") && this.state.room === "chartRoom" && !this.state.flags.cabinetOpen) return [{ type: "error", text: "You cannot reach it while the cabinet is jammed shut." }];
+      if (target.includes("ladder") && this.state.room === "storageShed") return [{ type: "error", text: this.state.flags.ladderLowered ? "The ladder is too awkward to carry and already stands where it is useful." : "The ladder is lashed beneath the rafters, beyond your reach." }];
       return [{ type: "error", text: "You cannot see that here." }];
+    }
+    if (item === "ceramic fuse" && this.state.room === "storageShed" && !this.state.flags.ladderLowered) {
+      return [{ type: "error", text: "You stretch until your fingers scrape the shelf, but the tobacco tin remains a good two feet above them." }];
     }
     this.state.roomItems[this.state.room] = this.itemsHere().filter((x) => x !== item);
     this.state.inventory.push(item);
+    if (item === "ceramic fuse" && this.state.room === "storageShed") return [{ type: "response", text: "You climb three careful rungs and lift the ceramic fuse from its tobacco tin. Taken: ceramic fuse." }];
     return [{ type: "response", text: `Taken: ${item}.` }];
   }
 
@@ -357,6 +410,15 @@ export class Game {
 
   use(target, input) {
     const has = (item) => this.state.inventory.includes(item);
+    if (this.state.room === "storageShed" && (target.includes("ladder") || target.includes("loop") || target.includes("rafters"))) {
+      if (this.state.flags.ladderLowered) return [{ type: "response", text: "The ladder is already down and leaning against the shelves." }];
+      if (!has("boat hook")) return [{ type: "error", text: "The release loop hangs beyond your reach. You need something long enough to catch it." }];
+      this.state.flags.ladderLowered = true;
+      return [{ type: "response", text: "You catch the rope loop with the boat hook and pull. The fastening slips free; the ladder unfolds with a clatter that seems much too loud, then comes to rest against the top shelves." }];
+    }
+    if (this.state.room === "storageShed" && (target.includes("shelf") || target.includes("fuse")) && has("boat hook") && !this.state.flags.ladderLowered) {
+      return [{ type: "error", text: "The hook could knock the tobacco tin down, but the ceramic fuse would not survive the fall. The suspended ladder is a safer prospect." }];
+    }
     if (this.state.room === "grotto" && (target.includes("hook") || target.includes("pool") || target.includes("key"))) {
       if (!has("boat hook")) return [{ type: "error", text: "You need something long enough to reach the key." }];
       if (this.state.flags.keyRetrieved) return [{ type: "response", text: "There is nothing else worth fishing from the pool." }];
@@ -446,7 +508,12 @@ export class Game {
     if (!flags.keyRetrieved) return this.state.inventory.includes("boat hook") ? "Something brass lies in the grotto pool. The boat hook should reach it." : "Examine the wrecked boat on the beach, then take what you find.";
     if (!flags.engineUnlocked) return "The brass key looks suited to the lock on the engine-house door in the yard.";
     if (!flags.generatorFuelled) return "The galley cupboards hold something the generator needs.";
-    if (!flags.fuseInstalled) return "Examine the loose floorboard in the keeper's quarters, north of the galley.";
+    if (!flags.fuseInstalled) {
+      if (this.state.inventory.includes("ceramic fuse")) return "The fresh fuse belongs in the empty porcelain socket on the generator board.";
+      if (room === "storageShed" && !flags.ladderLowered) return "The top shelf is out of reach, but the release loop above the ladder is not beyond the boat hook.";
+      if (room === "storageShed") return "The ladder now reaches the top shelf. Take what you found there.";
+      return "The keepers moved their electrical spares to the rear store. A service path runs west from the yard.";
+    }
     if (!flags.power) return "With fuel and fuse installed, start the generator.";
     if (!flags.cabinetOpen) return this.state.inventory.includes("screwdriver") ? "The chart-room cabinet is swollen shut. Try the screwdriver." : "Look around the engine house for a useful tool.";
     if (!this.state.inventory.includes("prism") && !flags.prismInstalled) return "The opened chart-room cabinet contains something you need. Take it—and read the log.";
