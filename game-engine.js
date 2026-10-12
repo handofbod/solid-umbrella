@@ -96,7 +96,7 @@ const rooms = {
   },
   lanternRoom: {
     name: "Lantern Room",
-    description: "The great Fresnel lens stands beneath the glass dome, dark but intact. Its central mount is empty and the bearing wheel is set to zero. A brass ignition lever waits beside it.",
+    description: "The great Fresnel lens stands beneath the glass dome, dark but intact. Its central mount is {mountState}, and the bearing wheel is set to {bearing}°. A brass ignition lever waits beside it.",
     exits: { down: "lowerStair" },
     details: {
       lens: "The lens can be aligned by setting its bearing wheel. A diamond-shaped mount at its heart is missing a prism.",
@@ -172,11 +172,17 @@ export class Game {
   room() { return rooms[this.state.room]; }
   itemsHere() { return this.state.roomItems[this.state.room]; }
 
+  roomDescription() {
+    return this.room().description
+      .replace("{bearing}", this.state.bearing)
+      .replace("{mountState}", this.state.flags.prismInstalled ? "fitted with its glass prism" : "empty");
+  }
+
   describeRoom() {
     const room = this.room();
     const visible = this.itemsHere();
-    const itemLine = visible.length ? ` You can see ${this.list(visible)} here.` : "";
-    return { type: "location", title: room.name, text: room.description + itemLine, exits: Object.keys(room.exits) };
+    const itemLine = visible.length ? ` You can see ${this.list(visible.map((item) => this.withIndefiniteArticle(item)))} here.` : "";
+    return { type: "location", title: room.name, text: this.roomDescription() + itemLine, exits: Object.keys(room.exits) };
   }
 
   command(rawInput) {
@@ -391,6 +397,10 @@ export class Game {
   list(items) {
     if (items.length < 2) return items[0] || "nothing";
     return `${items.slice(0, -1).join(", ")} and ${items.at(-1)}`;
+  }
+
+  withIndefiniteArticle(noun) {
+    return `${/^[aeiou]/i.test(noun) ? "an" : "a"} ${noun}`;
   }
 }
 

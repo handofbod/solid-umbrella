@@ -8,11 +8,24 @@ function run(game, commands) {
 
 test("direction abbreviations and common synonyms work", () => {
   const game = new Game();
+  assert.match(game.describeRoom().text, /a boat hook/);
   game.command("n");
   assert.equal(game.state.room, "cliffPath");
   game.command("walk west");
   assert.equal(game.state.room, "grotto");
   assert.match(game.command("x pool")[0].text, /key-shaped/i);
+});
+
+test("room descriptions use natural articles and live puzzle state", () => {
+  const game = new Game();
+  game.state.room = "engineRoom";
+  assert.match(game.describeRoom().text, /a screwdriver/);
+  game.state.room = "bunkRoom";
+  assert.match(game.describeRoom().text, /a ceramic fuse/);
+  game.state.room = "lanternRoom";
+  game.command("set lens to 317");
+  assert.match(game.describeRoom().text, /set to 317°/);
+  assert.doesNotMatch(game.describeRoom().text, /set to zero/);
 });
 
 test("boat hook retrieves the inaccessible key", () => {
